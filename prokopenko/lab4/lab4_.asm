@@ -14,25 +14,36 @@ INTERRUPT PROC FAR
 	keep_ip 	dw 0
 	is_loaded 	dw 0FFDAh
 	counter 	db 'Number of interrupt calls: 0000  $'
+	ss_keeper dw 0
+	sp_keeper dw 0
+	ax_keeper dw 0
+	inter_stack dw 64 dup (?)
 
 function:
+	mov ss_keeper, ss
+ 	mov sp_keeper, sp
+ 	mov ax_keeper, ax
+ 	mov ax, seg inter_stack
+ 	mov ss, ax
+ 	mov sp, 0
+ 	mov ax, ax_keeper
 	push ax
 	push bx
 	push cx
 	push dx
 
-	;Получение курсора
+	;╨Я╨╛╨╗╤Г╤З╨╡╨╜╨╕╨╡ ╨║╤Г╤А╤Б╨╛╤А╨░
 	mov ah,3h
 	mov bh,0h
 	int 10h
-	push dx ;Сохраняем курсор в стеке
+	push dx ;╨б╨╛╤Е╤А╨░╨╜╤П╨╡╨╝ ╨║╤Г╤А╤Б╨╛╤А ╨▓ ╤Б╤В╨╡╨║╨╡
 
-	;Установка курсора
+	;╨г╤Б╤В╨░╨╜╨╛╨▓╨║╨░ ╨║╤Г╤А╤Б╨╛╤А╨░
 	mov ah,02h
 	mov bh,0h
 	mov dx,0214h
 	int 10h
-	;Подсчет кол-ва прерываний
+	;╨Я╨╛╨┤╤Б╤З╨╡╤В ╨║╨╛╨╗-╨▓╨░ ╨┐╤А╨╡╤А╤Л╨▓╨░╨╜╨╕╨╣
 	push si
 	push cx
 	push ds
@@ -77,7 +88,7 @@ _not:
   pop ds
 	pop cx
 	pop si
-	;Печать строки
+	;╨Я╨╡╤З╨░╤В╤М ╤Б╤В╤А╨╛╨║╨╕
 	push es
 	push bp
 	mov ax,SEG counter
@@ -91,7 +102,7 @@ _not:
 	int 10h
 	pop bp
 	pop es
-	;восстановка курсора
+	;╨▓╨╛╤Б╤Б╤В╨░╨╜╨╛╨▓╨║╨░ ╨║╤Г╤А╤Б╨╛╤А╨░
 	pop dx
 	mov ah,02h
 	mov bh,0h
@@ -100,8 +111,11 @@ _not:
 	pop dx
 	pop cx
 	pop bx
-	pop ax       ;восстановление ax
-
+	pop ax       ;╨▓╨╛╤Б╤Б╤В╨░╨╜╨╛╨▓╨╗╨╡╨╜╨╕╨╡ ax
+	mov ax, ss_keeper
+ 	mov ss, ax
+ 	mov ax, ax_keeper
+ 	mov sp, sp_keeper
 	iret
 INTERRUPT ENDP
 
@@ -113,11 +127,11 @@ ISLOADED PROC near
         push es
 	push bx
 
-	mov ax,351Ch ;получение вектора прерываний
+	mov ax,351Ch ;╨┐╨╛╨╗╤Г╤З╨╡╨╜╨╕╨╡ ╨▓╨╡╨║╤В╨╛╤А╨░ ╨┐╤А╨╡╤А╤Л╨▓╨░╨╜╨╕╨╣
 	int 21h
 
 	mov dx,es:[bx+11]
-	cmp dx,0FFDAh ;проверка на совпадение кода
+	cmp dx,0FFDAh ;╨┐╤А╨╛╨▓╨╡╤А╨║╨░ ╨╜╨░ ╤Б╨╛╨▓╨┐╨░╨┤╨╡╨╜╨╕╨╡ ╨║╨╛╨┤╨░
 	je int_is_loaded
 	mov al,0h
 	pop bx
@@ -203,19 +217,19 @@ UNLOAD PROC near
 
 	cli
 	push ds
-	mov dx,es:[bx+9]   ;IP стандартного
-	mov ax,es:[bx+7]   ;CS стандартного
+	mov dx,es:[bx+9]   ;IP ╤Б╤В╨░╨╜╨┤╨░╤А╤В╨╜╨╛╨│╨╛
+	mov ax,es:[bx+7]   ;CS ╤Б╤В╨░╨╜╨┤╨░╤А╤В╨╜╨╛╨│╨╛
 	mov ds,ax
 	mov ax,251Ch
 	int 21h
 	pop ds
 	sti
 
-	mov dx,offset int_unload    ;сообщение о выгрузке
+	mov dx,offset int_unload    ;╤Б╨╛╨╛╨▒╤Й╨╡╨╜╨╕╨╡ ╨╛ ╨▓╤Л╨│╤А╤Г╨╖╨║╨╡
 	mov ah,09h
 	int 21h
 
-;Удаление MCB
+;╨г╨┤╨░╨╗╨╡╨╜╨╕╨╡ MCB
 	push es
 
 	mov cx,es:[bx+3]
@@ -240,22 +254,22 @@ Main PROC far
 	mov bx,02Ch
 	mov ax,[bx]
 	mov SR_PSP,ax
-	mov AD_PSP,ds  ;сохраняем PSP
+	mov AD_PSP,ds  ;╤Б╨╛╤Е╤А╨░╨╜╤П╨╡╨╝ PSP
 	sub ax,ax
 	xor bx,bx
 
 	mov ax,data
 	mov ds,ax
 
-	call CHECK_UNLOAD_FLAG   ;Загрузка или выгрузка(проверка параметра)
+	call CHECK_UNLOAD_FLAG   ;╨Ч╨░╨│╤А╤Г╨╖╨║╨░ ╨╕╨╗╨╕ ╨▓╤Л╨│╤А╤Г╨╖╨║╨░(╨┐╤А╨╛╨▓╨╡╤А╨║╨░ ╨┐╨░╤А╨░╨╝╨╡╤В╤А╨░)
 	cmp al,1h
 	je un_load
 
-	call ISLOADED   ;Установлен ли разработанный вектор прерывания
+	call ISLOADED   ;╨г╤Б╤В╨░╨╜╨╛╨▓╨╗╨╡╨╜ ╨╗╨╕ ╤А╨░╨╖╤А╨░╨▒╨╛╤В╨░╨╜╨╜╤Л╨╣ ╨▓╨╡╨║╤В╨╛╤А ╨┐╤А╨╡╤А╤Л╨▓╨░╨╜╨╕╤П
 	cmp al,01h
 	jne al_loaded
 
-	mov dx,offset int_al_loaded	;Уже установлен(выход с сообщение)
+	mov dx,offset int_al_loaded	;╨г╨╢╨╡ ╤Г╤Б╤В╨░╨╜╨╛╨▓╨╗╨╡╨╜(╨▓╤Л╤Е╨╛╨┤ ╤Б ╤Б╨╛╨╛╨▒╤Й╨╡╨╜╨╕╨╡)
 	mov ah,09h
 	int 21h
 
@@ -264,9 +278,9 @@ Main PROC far
 
 al_loaded:
 
-;Загрузка
+;╨Ч╨░╨│╤А╤Г╨╖╨║╨░
 	call LOAD
-;Оставляем обработчик прерываний в памяти
+;╨Ю╤Б╤В╨░╨▓╨╗╤П╨╡╨╝ ╨╛╨▒╤А╨░╨▒╨╛╤В╤З╨╕╨║ ╨┐╤А╨╡╤А╤Л╨▓╨░╨╜╨╕╨╣ ╨▓ ╨┐╨░╨╝╤П╤В╨╕
 	mov dx,offset END_INT
 	mov cl,4h
 	shr dx,cl
@@ -276,7 +290,7 @@ al_loaded:
 	mov ax,3100h
 	int 21h
 
-;Выгрузка
+;╨Т╤Л╨│╤А╤Г╨╖╨║╨░
 un_load:
 
 	call ISLOADED
@@ -289,7 +303,7 @@ un_load:
 	int 21h
 
 not_loaded:
-	mov dx,offset int_not_loaded      ;Если резидент не установлен, то нежелательно выгружать стандартный ВП
+	mov dx,offset int_not_loaded      ;╨Х╤Б╨╗╨╕ ╤А╨╡╨╖╨╕╨┤╨╡╨╜╤В ╨╜╨╡ ╤Г╤Б╤В╨░╨╜╨╛╨▓╨╗╨╡╨╜, ╤В╨╛ ╨╜╨╡╨╢╨╡╨╗╨░╤В╨╡╨╗╤М╨╜╨╛ ╨▓╤Л╨│╤А╤Г╨╢╨░╤В╤М ╤Б╤В╨░╨╜╨┤╨░╤А╤В╨╜╤Л╨╣ ╨Т╨Я
 	mov ah,09h
 	int 21h
 
